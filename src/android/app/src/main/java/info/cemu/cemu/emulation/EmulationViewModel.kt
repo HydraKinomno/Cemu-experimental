@@ -19,6 +19,7 @@ import info.cemu.cemu.common.settings.AppSettingsStore
 import info.cemu.cemu.common.settings.InputOverlayRect
 import info.cemu.cemu.common.settings.InputOverlaySettings
 import info.cemu.cemu.common.settings.OverlayInputConfig
+import info.cemu.cemu.common.settings.SecondaryScreenContent
 import info.cemu.cemu.nativeinterface.NativeEmulation
 import info.cemu.cemu.nativeinterface.NativeEmulation.PrepareTitleResult
 import info.cemu.cemu.nativeinterface.NativeException
@@ -38,6 +39,7 @@ data class SideMenuState(
     val isTVReplacedWithPad: Boolean = false,
     val isPadVisible: Boolean = false,
     val isInputOverlayVisible: Boolean = false,
+    val isExternalScreenEnabled: Boolean = false,
 )
 
 class ConditionFlags(
@@ -131,6 +133,13 @@ class EmulationViewModel(
             viewModelScope,
             SharingStarted.WhileSubscribed(5000),
             null,
+        )
+
+    val secondaryScreenContent = dataStore.data.map { it.emulationSettings.secondaryScreenContent }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            SecondaryScreenContent.GAMEPAD,
         )
 
     val destroyedSurfaces = ConditionFlags()
