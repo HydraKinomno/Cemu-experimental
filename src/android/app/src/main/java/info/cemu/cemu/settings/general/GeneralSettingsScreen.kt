@@ -7,6 +7,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import info.cemu.cemu.common.settings.GamePadPosition
+import info.cemu.cemu.common.settings.SecondaryScreenContent
 import info.cemu.cemu.common.ui.components.Button
 import info.cemu.cemu.common.ui.components.ScreenContent
 import info.cemu.cemu.common.ui.components.SingleSelection
@@ -68,7 +69,20 @@ fun GeneralSettingsScreen(
             choiceToString = { gamePadPositionToString(it) },
             choices = GamePadPosition.entries,
         )
+
+        SingleSelection(
+            label = tr("Secondary screen layout"),
+            choice = emulationSettings.secondaryScreenContent,
+            onChoiceChanged = { viewModel.setSecondaryScreenContent(it) },
+            choiceToString = { secondaryScreenContentToString(it) },
+            choices = SecondaryScreenContent.entries,
+        )
     }
+}
+
+private fun secondaryScreenContentToString(content: SecondaryScreenContent) = when (content) {
+    SecondaryScreenContent.GAMEPAD -> tr("GamePad screen")
+    SecondaryScreenContent.TV -> tr("TV screen")
 }
 
 private fun gamePadPositionToString(position: GamePadPosition) = when (position) {

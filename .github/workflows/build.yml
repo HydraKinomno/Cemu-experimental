@@ -327,8 +327,9 @@ jobs:
           fi
 
           ./gradlew assembleRelease
-      # - name: Upload artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: cemu-bin-android
-      #     path: ./src/android/app/build/outputs/apk/*/*.apk
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cemu-bin-android
+          path: ./src/android/app/build/outputs/apk/*/*.apk
