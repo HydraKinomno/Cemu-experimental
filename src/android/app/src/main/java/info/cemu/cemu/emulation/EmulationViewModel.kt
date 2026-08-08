@@ -19,6 +19,7 @@ import info.cemu.cemu.common.settings.AppSettingsStore
 import info.cemu.cemu.common.settings.InputOverlayRect
 import info.cemu.cemu.common.settings.InputOverlaySettings
 import info.cemu.cemu.common.settings.OverlayInputConfig
+import info.cemu.cemu.common.settings.SecondaryScreenContent
 import info.cemu.cemu.nativeinterface.NativeEmulation
 import info.cemu.cemu.nativeinterface.NativeEmulation.PrepareTitleResult
 import info.cemu.cemu.nativeinterface.NativeException
@@ -38,6 +39,7 @@ data class SideMenuState(
     val isTVReplacedWithPad: Boolean = false,
     val isPadVisible: Boolean = false,
     val isInputOverlayVisible: Boolean = false,
+    val isExternalScreenEnabled: Boolean = false,
 )
 
 class ConditionFlags(
@@ -133,13 +135,31 @@ class EmulationViewModel(
             null,
         )
 
+    val secondaryScreenContent = dataStore.data.map { it.emulationSettings.secondaryScreenContent }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            SecondaryScreenContent.GAMEPAD,
+        )
+
     val destroyedSurfaces = ConditionFlags()
     var setSurfaces = ConditionFlags()
+
+    private val _liveSurfaceCount = MutableStateFlow(0)
+
+    /**
+     * Number of surfaces currently held by a view. Moving a canvas between the device and an
+     * external display has to wait for this to reach zero, so that the surfaces are recreated
+     * through the same path as a pause/resume instead of overlapping with each other.
+     */
+    val liveSurfaceCount = _liveSurfaceCount.asStateFlow()
 
     private inner class CanvasSurfaceHolderCallback(val isMainCanvas: Boolean) :
         SurfaceHolder.Callback {
 
-        override fun surfaceCreated(surfaceHolder: SurfaceHolder) {}
+        override fun surfaceCreated(surfaceHolder: SurfaceHolder) {
+            _liveSurfaceCount.update { it + 1 }
+        }
 
         override fun surfaceChanged(
             surfaceHolder: SurfaceHolder,
@@ -175,6 +195,8 @@ class EmulationViewModel(
         }
 
         override fun surfaceDestroyed(surfaceHolder: SurfaceHolder) {
+            _liveSurfaceCount.update { it - 1 }
+
             if (setSurfaces.get(isMain = false)) {
                 NativeEmulation.clearPadSurface()
                 setSurfaces.set(isMain = false, false)

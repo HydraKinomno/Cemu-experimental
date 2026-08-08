@@ -14,6 +14,7 @@ import java.io.OutputStream
 @Serializable
 data class EmulationSettings(
     val gamePadPosition: GamePadPosition = GamePadPosition.RIGHT,
+    val secondaryScreenContent: SecondaryScreenContent = SecondaryScreenContent.GAMEPAD,
 )
 
 @Serializable

@@ -9,6 +9,7 @@ import info.cemu.cemu.common.settings.AppSettingsStore
 import info.cemu.cemu.common.settings.EmulationSettings
 import info.cemu.cemu.common.settings.GamePadPosition
 import info.cemu.cemu.common.settings.GuiSettings
+import info.cemu.cemu.common.settings.SecondaryScreenContent
 import info.cemu.cemu.common.ui.localization.getAvailableLanguages
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
@@ -45,6 +46,18 @@ class GeneralSettingsViewModel(
 
         viewModelScope.launch {
             dataStore.updateData { it.copy(guiSettings = it.guiSettings.copy(language = language)) }
+        }
+    }
+
+    fun setSecondaryScreenContent(secondaryScreenContent: SecondaryScreenContent) {
+        viewModelScope.launch {
+            dataStore.updateData {
+                it.copy(
+                    emulationSettings = it.emulationSettings.copy(
+                        secondaryScreenContent = secondaryScreenContent
+                    )
+                )
+            }
         }
     }
 
