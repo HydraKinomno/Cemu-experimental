@@ -145,10 +145,21 @@ class EmulationViewModel(
     val destroyedSurfaces = ConditionFlags()
     var setSurfaces = ConditionFlags()
 
+    private val _liveSurfaceCount = MutableStateFlow(0)
+
+    /**
+     * Number of surfaces currently held by a view. Moving a canvas between the device and an
+     * external display has to wait for this to reach zero, so that the surfaces are recreated
+     * through the same path as a pause/resume instead of overlapping with each other.
+     */
+    val liveSurfaceCount = _liveSurfaceCount.asStateFlow()
+
     private inner class CanvasSurfaceHolderCallback(val isMainCanvas: Boolean) :
         SurfaceHolder.Callback {
 
-        override fun surfaceCreated(surfaceHolder: SurfaceHolder) {}
+        override fun surfaceCreated(surfaceHolder: SurfaceHolder) {
+            _liveSurfaceCount.update { it + 1 }
+        }
 
         override fun surfaceChanged(
             surfaceHolder: SurfaceHolder,
@@ -184,6 +195,8 @@ class EmulationViewModel(
         }
 
         override fun surfaceDestroyed(surfaceHolder: SurfaceHolder) {
+            _liveSurfaceCount.update { it - 1 }
+
             if (setSurfaces.get(isMain = false)) {
                 NativeEmulation.clearPadSurface()
                 setSurfaces.set(isMain = false, false)

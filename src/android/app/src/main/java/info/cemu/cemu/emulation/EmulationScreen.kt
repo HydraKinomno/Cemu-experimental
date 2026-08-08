@@ -1,6 +1,7 @@
 package info.cemu.cemu.emulation
 
 import android.annotation.SuppressLint
+import android.view.Display
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import androidx.activity.compose.BackHandler
@@ -102,8 +103,24 @@ fun EmulationScreen(
     val inputOverlaySettings by viewModel.inputOverlaySettings.collectAsState()
     val secondaryScreenContent by viewModel.secondaryScreenContent.collectAsState()
     val externalDisplay by rememberExternalDisplay(context)
-    val activeExternalDisplay =
+    val liveSurfaceCount by viewModel.liveSurfaceCount.collectAsState()
+
+    val requestedExternalDisplay =
         externalDisplay?.takeIf { sideMenuState.isExternalScreenEnabled && isEmulationInitialized }
+    val requestedExternalScreen = requestedExternalDisplay?.let { it to secondaryScreenContent }
+
+    // A canvas cannot be handed over to another view while its surface is still alive, so the
+    // surfaces are torn down first and only recomposed once every one of them is gone
+    var externalScreen by remember {
+        mutableStateOf<Pair<Display, SecondaryScreenContent>?>(null)
+    }
+    val isMovingCanvas = requestedExternalScreen != externalScreen
+
+    LaunchedEffect(requestedExternalScreen, liveSurfaceCount) {
+        if (isMovingCanvas && liveSurfaceCount == 0) {
+            externalScreen = requestedExternalScreen
+        }
+    }
 
 
     fun closeDrawer() {
@@ -193,24 +210,26 @@ fun EmulationScreen(
             }
         },
     ) {
-        EmulationSurfaces(
-            sideMenuState = sideMenuState,
-            gamePadPosition = gamePadPosition,
-            externalScreenContent = activeExternalDisplay?.let { secondaryScreenContent },
-            mainHolderCallback = viewModel.mainHolderCallback,
-            padHolderCallback = viewModel.padHolderCallback,
-            onInitializeEmulation = viewModel::initializeEmulation,
-        )
-
-        activeExternalDisplay?.let { display ->
-            ExternalDisplaySurface(
-                display = display,
-                holderCallback = if (secondaryScreenContent.isTV()) viewModel.mainHolderCallback
-                else viewModel.padHolderCallback,
-                onDismissed = {
-                    viewModel.updateSideMenuState(sideMenuState.copy(isExternalScreenEnabled = false))
-                },
+        if (!isMovingCanvas) {
+            EmulationSurfaces(
+                sideMenuState = sideMenuState,
+                gamePadPosition = gamePadPosition,
+                externalScreenContent = externalScreen?.second,
+                mainHolderCallback = viewModel.mainHolderCallback,
+                padHolderCallback = viewModel.padHolderCallback,
+                onInitializeEmulation = viewModel::initializeEmulation,
             )
+
+            externalScreen?.let { (display, content) ->
+                ExternalDisplaySurface(
+                    display = display,
+                    holderCallback = if (content.isTV()) viewModel.mainHolderCallback
+                    else viewModel.padHolderCallback,
+                    onDismissed = {
+                        viewModel.updateSideMenuState(sideMenuState.copy(isExternalScreenEnabled = false))
+                    },
+                )
+            }
         }
 
         InputOverlaySurface(
